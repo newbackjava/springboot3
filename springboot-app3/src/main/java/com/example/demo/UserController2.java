@@ -18,7 +18,7 @@ public class UserController2 {
 
     @GetMapping("/")
     public String hello() {
-        return "Spring Boot! START PAGE";
+        return "Spring Boot! START PAGE2";
     }
 
     @GetMapping("/mysql")
@@ -27,7 +27,7 @@ public class UserController2 {
 
             String sql = "SELECT now()";
             String result = jdbcTemplate.queryForObject(sql, String.class);
-            return "Database test successful. now() : " + result;
+            return "Database test2 successful. now() : " + result;
         } catch (Exception e) {
             e.printStackTrace();
             return "Database connection failed! Error: " + e.getMessage();
@@ -39,7 +39,7 @@ public class UserController2 {
      @GetMapping("/redis-set")
     public String redisSet() {
         try {
-            redis.opsForValue().set("key", "100");
+            redis.opsForValue().set("key", "200");
             return "Redis SET OK. key=key, value=100";
         } catch (Exception e) {
             e.printStackTrace();
