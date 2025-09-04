@@ -52,6 +52,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT }}
+          timeout: 60s                      # 연결 타임아웃 짧게
+          command_timeout: 20m              # 명령 실행 최대 시간
+          script_stop: true                 # 오류 시 즉시 중단
           script: |
             set -e
             cd ~/springboot3
