@@ -37,52 +37,33 @@ jobs:
           platforms: linux/amd64
 
       # 5) AWS 자격증명 (Access Key 방식)
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}     # (스크린샷의 키)
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2                              # 서울 리전 예시
+        - name: Configure AWS credentials
+            uses: aws-actions/configure-aws-credentials@v4
+            with:
+              aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+              aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              aws-region: ap-northeast-2
 
-      # 6) SSM Run Command로 원격 배포 (EC2에서 docker compose 실행)
-      - name: Deploy via AWS SSM
-        env:
-          TARGET_INSTANCE_ID: i-057dcdc54dcb389b7   # 또는 태그 기반은 아래 주석 참고
-          # TARGET_TAG_KEY: Name
-          # TARGET_TAG_VALUE: alicia
-        run: |
-          set -euo pipefail
-          
-          # 1) 원격에서 실행할 스크립트 작성
-          REMOTE_SCRIPT=$(cat <<'EOS'
-          set -e
-          cd ~/springboot3
-          
-          # (사설 레포면) EC2에 미리 주입된 자격으로 Docker Hub 로그인
-          if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
-            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
-          fi
-          
-          docker compose pull
-          docker compose up -d
-          docker compose ps
-          EOS
-          )
-          
-          # 2) jq로 JSON 파라미터 생성 → 파일로 저장
-          jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
-          
-          # 3) SSM Run Command 전송 (InstanceId 방식)
-          CMD_ID=$(aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --comment "GitHub Actions deploy" \
-            --instance-ids "$TARGET_INSTANCE_ID" \
-            --parameters file:///tmp/ssm-params.json \
-            --query "Command.CommandId" \
-            --output text)
-          
-          echo "SSM CommandId: ${CMD_ID}"
-          
-          # 4) 완료 대기 + 출력 확인
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$TARGET_INSTANCE_ID"
-          aws ssm list-command-invocations --command-id "$CMD_ID" --details --output text
+            - name: Deploy via SSM
+              run: |
+                REMOTE_SCRIPT=$(cat <<'EOS'
+                set -euo pipefail
+                cd ~/springboot3
+                docker compose pull
+                docker compose up -d
+                docker compose ps
+                EOS
+                )
+      
+                jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
+      
+                CMD_ID=$(aws ssm send-command \
+                  --region ap-northeast-2 \
+                  --document-name "AWS-RunShellScript" \
+                  --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx" \
+                  --parameters file:///tmp/ssm-params.json \
+                  --query "Command.CommandId" \
+                  --output text)
+      
+                echo "SSM CommandId: $CMD_ID"
+                aws ssm wait command-executed --region ap-northeast-2 --command-id "$CMD_ID" --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx"
