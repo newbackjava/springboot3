@@ -47,7 +47,7 @@ jobs:
       # 6) SSM Run Command로 원격 배포 (EC2에서 docker compose 실행)
       - name: Deploy via AWS SSM
         env:
-          TARGET_INSTANCE_ID: i-047e34f1497292983   # 또는 태그 기반은 아래 주석 참고
+          TARGET_INSTANCE_ID: i-057dcdc54dcb389b7   # 또는 태그 기반은 아래 주석 참고
           # TARGET_TAG_KEY: Name
           # TARGET_TAG_VALUE: alicia
         run: |
