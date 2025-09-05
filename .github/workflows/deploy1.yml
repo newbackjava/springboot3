@@ -81,6 +81,7 @@ jobs:
             --query "Command.CommandId" \
             --output text)
           
+          
           echo "SSM CommandId: ${CMD_ID}"
           
           # 4) 완료 대기 + 출력 확인
