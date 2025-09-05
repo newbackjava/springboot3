@@ -52,11 +52,11 @@ jobs:
           TARGET_TAG_KEY: Name
           TARGET_TAG_VALUE: alicia
         run: |
-          # set -euo pipefail
+          set -euo pipefail
 
           # 실행할 쉘 스크립트(EC2에서 동작)
-          # read -r -d '' REMOTE_SCRIPT << 'EOS'
-          # set -e
+          read -r -d '' REMOTE_SCRIPT << 'EOS'
+          set -e
           cd ~/springboot3
 
           # (사설 레포면) Docker Hub 로그인 - 토큰은 EC2 측 Secrets Manager/SSM 파라미터로 가져오는 것을 권장
