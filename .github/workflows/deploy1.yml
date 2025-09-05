@@ -48,9 +48,9 @@ jobs:
       - name: Deploy via AWS SSM
         env:
           # 배포 대상 EC2. InstanceId 또는 태그 기반 택1
-          TARGET_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}  # i-xxxxxxxxx (권장)
-          # TARGET_TAG_KEY: Name
-          # TARGET_TAG_VALUE: my-ec2
+          TARGET_INSTANCE_ID: i-047e34f1497292983  # i-xxxxxxxxx (권장)
+          TARGET_TAG_KEY: Name
+          TARGET_TAG_VALUE: alicia
         run: |
           # set -euo pipefail
 
