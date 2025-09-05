@@ -47,18 +47,18 @@ jobs:
       # 6) SSM Run Command로 원격 배포 (EC2에서 docker compose 실행)
       - name: Deploy via AWS SSM
         env:
-          TARGET_INSTANCE_ID: i-047e34f1497292983
-          # (태그 기반 쓸 거면 아래 두 줄 사용하고 instance-ids 대신 targets 옵션 사용)
+          TARGET_INSTANCE_ID: i-047e34f1497292983   # 또는 태그 기반은 아래 주석 참고
           # TARGET_TAG_KEY: Name
           # TARGET_TAG_VALUE: alicia
         run: |
           set -euo pipefail
           
+          # 1) 원격에서 실행할 스크립트 작성
           REMOTE_SCRIPT=$(cat <<'EOS'
           set -e
           cd ~/springboot3
           
-          # (사설 레포면) Docker Hub 로그인: EC2 쪽 환경변수/파라미터에서 주입 권장
+          # (사설 레포면) EC2에 미리 주입된 자격으로 Docker Hub 로그인
           if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
             echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
           fi
@@ -69,16 +69,20 @@ jobs:
           EOS
           )
           
-          # --- InstanceId로 실행 ---
+          # 2) jq로 JSON 파라미터 생성 → 파일로 저장
+          jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
+          
+          # 3) SSM Run Command 전송 (InstanceId 방식)
           CMD_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Actions deploy" \
             --instance-ids "$TARGET_INSTANCE_ID" \
-            --parameters commands="$REMOTE_SCRIPT" \
+            --parameters file:///tmp/ssm-params.json \
             --query "Command.CommandId" \
             --output text)
           
           echo "SSM CommandId: ${CMD_ID}"
           
+          # 4) 완료 대기 + 출력 확인
           aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$TARGET_INSTANCE_ID"
           aws ssm list-command-invocations --command-id "$CMD_ID" --details --output text
