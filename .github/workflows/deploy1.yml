@@ -37,33 +37,33 @@ jobs:
           platforms: linux/amd64
 
       # 5) AWS 자격증명 (Access Key 방식)
-        - name: Configure AWS credentials
-            uses: aws-actions/configure-aws-credentials@v4
-            with:
-              aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws-region: ap-northeast-2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
 
-            - name: Deploy via SSM
-              run: |
-                REMOTE_SCRIPT=$(cat <<'EOS'
-                set -euo pipefail
-                cd ~/springboot3
-                docker compose pull
-                docker compose up -d
-                docker compose ps
-                EOS
-                )
-      
-                jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
-      
-                CMD_ID=$(aws ssm send-command \
-                  --region ap-northeast-2 \
-                  --document-name "AWS-RunShellScript" \
-                  --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx" \
-                  --parameters file:///tmp/ssm-params.json \
-                  --query "Command.CommandId" \
-                  --output text)
-      
-                echo "SSM CommandId: $CMD_ID"
-                aws ssm wait command-executed --region ap-northeast-2 --command-id "$CMD_ID" --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx"
+      - name: Deploy via SSM
+        run: |
+          REMOTE_SCRIPT=$(cat <<'EOS'
+          set -euo pipefail
+          cd ~/springboot3
+          docker compose pull
+          docker compose up -d
+          docker compose ps
+          EOS
+          )
+
+          jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
+
+          CMD_ID=$(aws ssm send-command \
+            --region ap-northeast-2 \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx" \
+            --parameters file:///tmp/ssm-params.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM CommandId: $CMD_ID"
+          aws ssm wait command-executed --region ap-northeast-2 --command-id "$CMD_ID" --targets "Key=instanceIds,Values=i-xxxxxxxxxxxxx"
