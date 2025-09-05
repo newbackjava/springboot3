@@ -47,39 +47,38 @@ jobs:
       # 6) SSM Run Command로 원격 배포 (EC2에서 docker compose 실행)
       - name: Deploy via AWS SSM
         env:
-          # 배포 대상 EC2. InstanceId 또는 태그 기반 택1
-          TARGET_INSTANCE_ID: i-047e34f1497292983  # i-xxxxxxxxx (권장)
-          TARGET_TAG_KEY: Name
-          TARGET_TAG_VALUE: alicia
+          TARGET_INSTANCE_ID: i-047e34f1497292983
+          # (태그 기반 쓸 거면 아래 두 줄 사용하고 instance-ids 대신 targets 옵션 사용)
+          # TARGET_TAG_KEY: Name
+          # TARGET_TAG_VALUE: alicia
         run: |
           set -euo pipefail
-
-          # 실행할 쉘 스크립트(EC2에서 동작)
-          read -r -d '' REMOTE_SCRIPT << 'EOS'
+          
+          REMOTE_SCRIPT=$(cat <<'EOS'
           set -e
           cd ~/springboot3
-
-          # (사설 레포면) Docker Hub 로그인 - 토큰은 EC2 측 Secrets Manager/SSM 파라미터로 가져오는 것을 권장
+          
+          # (사설 레포면) Docker Hub 로그인: EC2 쪽 환경변수/파라미터에서 주입 권장
           if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
             echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
           fi
-
+          
           docker compose pull
           docker compose up -d
           docker compose ps
           EOS
-
-          # SSM 명령 전송 (InstanceId 사용 예시)
-          #CMD_ID=$(aws ssm send-command \
-          #  --document-name "AWS-RunShellScript" \
-          #  --comment "GitHub Actions deploy" \
-          #  --instance-ids "$TARGET_INSTANCE_ID" \
-          #  --parameters commands="$REMOTE_SCRIPT" \
-          #  --query "Command.CommandId" \
-          #  --output text)
-
-          #echo "SSM CommandId: ${CMD_ID}"
-
-          # 완료 대기 + 출력 조회
-          #aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$TARGET_INSTANCE_ID"
-          #aws ssm list-command-invocations --command-id "$CMD_ID" --details --output text
+          )
+          
+          # --- InstanceId로 실행 ---
+          CMD_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Actions deploy" \
+            --instance-ids "$TARGET_INSTANCE_ID" \
+            --parameters commands="$REMOTE_SCRIPT" \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "SSM CommandId: ${CMD_ID}"
+          
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$TARGET_INSTANCE_ID"
+          aws ssm list-command-invocations --command-id "$CMD_ID" --details --output text
