@@ -18,7 +18,7 @@ public class UserController2 {
 
     @GetMapping("/")
     public String hello() {
-        return "<body bgcolor=yellow>hera 2------!!!!!!</body>";
+        return "<body bgcolor=yellow>hera 3------!!!!!!</body>";
     }
 
     @GetMapping("/mysql")
