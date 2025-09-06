@@ -45,7 +45,7 @@ jobs:
           echo "DEPLOY_DIR=~/springboot3/springboot3-web3" >> $GITHUB_OUTPUT
 
 
-      # 6. SSH로 EC2 접속 → docker compose 배포
+      # 6. SSH로 EC2 접속 → docker compose 배포(수정)
       - name: Deploy via SSH (compose up)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -62,14 +62,15 @@ jobs:
             cd ~/springboot3
 
             # (Docker Hub가 비공개 레포일 때만 필요)
-            if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-              echo "Docker Hub login..."
-              echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            fi
+            #if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            #  echo "Docker Hub login..."
+            #  echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            #fi
 
             # 최신 이미지 pull 및 기동
             docker compose pull
             docker compose up -d
+
 
             # 상태 확인
             docker compose ps
