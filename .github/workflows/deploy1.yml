@@ -46,10 +46,10 @@ jobs:
 
       - name: Deploy via AWS SSM
         env:
-          TARGET_INSTANCE_ID: i-057dcdc54dcb389b7
+          TARGET_INSTANCE_ID: i-0ecdef0cb1e7fa32a
         run: |
           set -euo pipefail
-          
+
           REMOTE_SCRIPT=$(cat <<'EOS'
           set -e
           cd ~/springboot3
@@ -58,9 +58,9 @@ jobs:
           docker compose ps
           EOS
           )
-          
+
           jq -n --arg s "$REMOTE_SCRIPT" '{commands: [$s]}' > /tmp/ssm-params.json
-          
+
           CMD_ID=$(aws ssm send-command \
             --region ap-northeast-2 \
             --document-name "AWS-RunShellScript" \
@@ -69,14 +69,14 @@ jobs:
             --parameters file:///tmp/ssm-params.json \
             --query "Command.CommandId" \
             --output text)
-          
+
           echo "SSM CommandId: ${CMD_ID}"
-          
+
           aws ssm wait command-executed \
             --region ap-northeast-2 \
             --command-id "$CMD_ID" \
             --instance-id "$TARGET_INSTANCE_ID"
-          
+
           aws ssm list-command-invocations \
             --region ap-northeast-2 \
             --command-id "$CMD_ID" \
